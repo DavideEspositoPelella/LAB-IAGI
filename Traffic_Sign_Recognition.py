@@ -32,6 +32,7 @@ import os
 from torch import nn, optim
 import torch.nn.functional as F
 import torchvision.transforms as T
+import albumentations as A
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
 from torchvision import models
@@ -172,14 +173,16 @@ class_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 
 DATA_DIR = Path('data')
 
-DATASETS = ['train', 'val', 'test']
-#DATASETS = ['train', 'val']
+#DATASETS = ['train', 'val', 'test']
+DATASETS = ['train', 'val']
 
 for ds in DATASETS:
   for cls in class_names:
     (DATA_DIR / ds / cls).mkdir(parents=True, exist_ok=True)
 
-"""**80% training, 10% validation, 10% test per ogni classe** (Nella corrispettiva cartella)"""
+"""**90% training, 20% validation
+ per ogni classe** (Nella corrispettiva cartella)
+"""
 
 for i, cls_index in enumerate(class_indices):
   image_paths = np.array(glob(f'{train_folders[cls_index]}/*.ppm'))
@@ -188,8 +191,8 @@ for i, cls_index in enumerate(class_indices):
   np.random.shuffle(image_paths)
 
   ds_split = np.split(
-    image_paths, indices_or_sections=[int(.8*len(image_paths)), int(.9*len(image_paths))]
-    #image_paths, indices_or_sections=[int(.8*len(image_paths))]
+    #image_paths, indices_or_sections=[int(.8*len(image_paths)), int(.9*len(image_paths))]
+    image_paths, indices_or_sections=[int(.8*len(image_paths))]
   )
 
   dataset_data = zip(DATASETS, ds_split)
@@ -200,16 +203,57 @@ for i, cls_index in enumerate(class_indices):
 
 """##Il dataset è sbilanciato, applico trasformazioni per **"Augmentation"**"""
 
+from torchvision.transforms.functional import affine
 mean_nums = [0.485, 0.456, 0.406]
 std_nums = [0.229, 0.224, 0.225]
+'''
+#!pip install -U git+https://github.com/albu/albumentations --no-cache-dir
+#!pip install -U albumentations
+transform_Albumentation = {'train': A.Compose([
+    #A.RandomResizedCrop(size=256),
+    T.RandomResizedCrop(size=256),
+    #A.Affine(scale=(0.6,1), translate_percent=(0.6), translate_px=None, rotate=(-20,20), shear=(-20,20), interpolation=1, mask_interpolation=0, cval=0, cval_mask=0, mode=0, fit_output=False, keep_ratio=False, always_apply=False, p=1),
+    T.RandomAffine(degrees=(-20, 20), translate=(0.2,0.3), scale=(0.6,1), shear=(-20, 20)),
+    T.ColorJitter(brightness=0.7, contrast=0.3, saturation=0.4, hue=0),
+    A.Blur(blur_limit=6, always_apply=False, p=0.8),
+    A.RandomRain(p=0.8),
+    A.RandomSnow(brightness_coeff=2.5, snow_point_lower=0.3, snow_point_upper=0.5, p=0.5),
+    A.ToTensor(),
+    T.Normalize(mean_nums, std_nums)
+]), 'val': T.Compose([
+    T.Resize(size=256),
+    T.CenterCrop (size = 224),
+    T.ToTensor(),
+    T.Normalize(mean_nums, std_nums)          
+]), 'test': T.Compose([
+    T.Resize(size=256),
+    T.CenterCrop (size = 224),
+    T.ToTensor(),
+    T.Normalize(mean_nums, std_nums)           
+]),
+}
+'''
+
+class AddGaussianNoise(object):
+    def __init__(self, mean=0., std=1.):
+        self.std = std
+        self.mean = mean
+        
+    def __call__(self, tensor):
+        return tensor + torch.randn(tensor.size()) * self.std + self.mean
+    
+    def __repr__(self):
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+
 
 transforms = {'train': T.Compose([
   T.RandomResizedCrop(size=256),
-  T.RandomAffine(degrees=(-20, 20), translate=(0.1,0.3), scale=(0.7,1), shear=(-20, 20)),
+  T.RandomAffine(degrees=(-10, 10), translate=(0.43,0.3), scale=(0.6,1), shear=(-20, 20)),
   T.ColorJitter(brightness=0.7, contrast=0.3, saturation=0.4, hue=0), #modifica condizioni foto
   T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)), #blur
   T.ToTensor(),
   T.Normalize(mean_nums, std_nums)
+  #T.RandomApply([AddGaussianNoise(0.1, 0.4)], p=0.4)  #rumore sensore
 ]), 'val': T.Compose([
   T.Resize(size=256),
   T.CenterCrop(size=224),
@@ -242,9 +286,9 @@ Salvo numero di example e nome delle classi in ogni dataset"""
 dataset_sizes = {d: len(image_datasets[d]) for d in DATASETS}
 class_names = image_datasets['train'].classes
 
-print('########################################')
+#print('########################################')
 print(image_datasets['train'].classes)
-print('########################################')
+#print('########################################')
 
 print(dataset_sizes)
 
@@ -584,8 +628,8 @@ def plot_training_history(history):
   ax2.set_ylabel('Accuracy')
   ax2.set_xlabel('Epoch')
 
-  fig.suptitle('Training history')
-  fig.savefig('drive/MyDrive/Modelli/resnet18/resnet18_no_pretrain_no_augmentation.png')
+  fig.suptitle('Training history alexnet')
+  fig.savefig('drive/MyDrive/Modelli/alexnet/alexnet.png')
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 plot_training_history(history)
@@ -618,14 +662,17 @@ def show_predictions(model, class_names, n_images=6):
         if images_handeled == n_images:
           return
 
-base_model = create_model('resnet18', 43)
+#base_model = create_model('resnet18', 43)
 
 #base_model.load_state_dict(torch.load('drive/MyDrive/Modelli_backup/resnet18_no/resnet18_no.pt', map_location = device))
-base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/resnet18/resnet18_strano.pt', map_location = device))
+#base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/resnet18/resnet18_strano.pt', map_location = device))
 
 #base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/alexnet/alexnet_no_pretrain_no_augmentation.bin'))
 
-      
+resnet18_no = torch.load('drive/MyDrive/Modelli/resnet18_no/resnet18_no_model.pt', map_location=device)
+resnet18_no.eval() 
+
+base_model = resnet18_no
 show_predictions(base_model, class_names, n_images=8)
 
 def get_predictions(model, data_loader):
@@ -721,9 +768,23 @@ from tqdm import tqdm
 !unzip -qq GTSRB_Final_Test_Images.zip
 !unzip -qq GTSRB_Final_Test_GT.zip
 
-base_model = create_model("resnet18",len(class_names))
-base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/resnet18/resnet18_strano.pt', map_location = device))     
-base_model.eval()
+#base_model = create_model("resnet18",len(class_names))
+#base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/resnet18_no/resnet18_no_model.pt', map_location = device))     
+#base_model.eval()
+
+#resnet18_no = torch.load('drive/MyDrive/Modelli/resnet18_no/resnet18_no_model.pt', map_location=device)
+#resnet18_no.eval() 
+
+#resnet18 = torch.load('drive/MyDrive/Modelli/resnet18/resnet18_model.pt', map_location=device)
+#resnet18.eval() 
+
+#alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
+#alexnet.eval()
+
+alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_model.pt', map_location=device)
+alexnet.eval()
+
+base_model = alexnet
 
 # DataFrame for ground truth.
 gt_df = pd.read_csv('GT-final_test.csv', delimiter=';' )
@@ -808,11 +869,11 @@ print()
 
 #img_path = 'stop-sign.jpg' #stop
 #img_path = 'drive/MyDrive/inference/IMG_20220710_195852_099.jpg' #speed_limit 30
-#img_path = 'drive/MyDrive/inference/20220710_200527.jpg'  #round_about_mandatory
+#img_path = 'drive/MyDrive/inference/IMG_20220710_200527.jpg'  #round_about_mandatory
 #img_path = 'drive/MyDrive/inference/IMG_20220710_193242_762.jpg' #no_entry
-#img_path = 'drive/MyDrive/inference/IMG_20220710_195854_666.jpg'
+#img_path = 'drive/MyDrive/inference/IMG_20220710_195854_666.jpg'  #priority road
 #img_path = 'drive/MyDrive/inference/20220710_191336.jpg'  #keep right
-img_path = 'drive/MyDrive/inference/20220710_191319.jpg'
+#img_path = 'drive/MyDrive/inference/20220710_191319.jpg'   #no entry (rovinatissimo)
 show_image(img_path)
 
 """Predizione con confidenza rispetto a tutte le classi possibili"""
@@ -826,7 +887,19 @@ def predict_proba(model, image_path):
   pred = F.softmax(pred, dim=1)
   return pred.detach().cpu().numpy().flatten()
 
-#pred = predict_proba(base_model, 'stop-sign.jpg')
+#base_model = create_model("resnet18_no",len(class_names))
+#base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/resnet18_backup/resnet18_strano.pt', map_location = device))     
+#base_model.eval()
+
+#resnet18_no = torch.load('drive/MyDrive/Modelli/resnet18_no/resnet18_no_model.pt', map_location=device)
+#resnet18_no.eval() 
+#base_model = resnet18_no
+
+alexnet_rumore = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
+alexnet_rumore.eval()
+base_model = alexnet_rumore
+
+
 pred = predict_proba(base_model, img_path)
 pred
 
