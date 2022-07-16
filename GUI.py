@@ -7,6 +7,7 @@ from PIL import ImageTk
 import threading
 import tkinter as tk
 import shutil
+import time
 import torch.nn.functional as F
 import torchvision.transforms as T
 from torchvision.datasets import ImageFolder
@@ -14,20 +15,18 @@ from torch.utils.data import DataLoader
 from torchvision import models
 
 videoloop_stop = [False]
-global pred 
-pred = [False]
 global class_idx
 class_idx = [43]
 global model
-
+'''
 class_names = [
     'Limite velocità 20km/h', 'Limite velocità 30km/h', 'Limite velocità 50km/h', 
     'Limite velocità 60km/h', 'Limite velocità 70km/h', 'Limite velocità 80km/h', 
     'Fine limite velocità 80km/h', 'Limite velocità 100km/h', 
     'Limite velocità 120km/h', 'Divieto di sorpasso', 
-    'Divieto di sorpasso per veicoli oltre 3.5 tonnellate', 
-    'Diritto precedenza al prossimo incrocio', 'Strada prioritaria', 'Dare precedenza', 
-    'Stop', 'Divieto di transito', 'Divieto di transito per Veicoli oltre 3.5 tonnellate', 
+    'Divieto sorpasso per veicoli oltre 3.5 tonn', 
+    "Diritto precedenza all' incrocio", 'Strada prioritaria', 'Dare precedenza', 
+    'Stop', 'Divieto di transito', 'Divieto di transito Veicoli oltre 3.5 tonn', 
     'Senso vietato', 'Pericolo generico', 'Curva pericolosa a sinistra', 
     'Curva pericolosa a destra', 'Doppia curva', 'Dossi', 
     'Strada sdrucciolevole', 'Restringimento carreggiata destra', 'Cantieri stradali', 
@@ -36,17 +35,17 @@ class_names = [
     'Fine di tutti i limiti di velocità e sorpasso', 'Obbligo svolta a destra avanti', 
     'Svolta a sinistra avanti', 'Obbligo diritto', 'Obbligo diritto o destra', 
     'Obbligo diritto o sinistra', 'Mantieni la destra', 'Mantieni la sinistra', 'Rotatoria', 
-    'Fine del divieto di sorpasso', 'Fine del divieto di sorpasso Veicoli oltre 3.5 tonnellate', ''
-]
-'''
+    'Fine del divieto di sorpasso', 'Fine divieto di sorpasso Veicoli oltre 3.5 tonn', ''
+]'''
+
 class_names = [
     'Speed limit (20km/h)', 'Speed limit (30km/h)', 'Speed limit (50km/h)', 
     'Speed limit (60km/h)', 'Speed limit (70km/h)', 'Speed limit (80km/h)', 
     'End of speed limit (80km/h)', 'Speed limit (100km/h)', 
     'Speed limit (120km/h)', 'No passing', 
     'No passing for vehicles over 3.5 metric tons', 
-    'Right-of-way at the next intersection', 'Priority road', 'Yield', 
-    'Stop', 'No vehicles', 'Vehicles over 3.5 metric tons prohibited', 
+    'Right-of-way at next intersection', 'Priority road', 'Yield', 
+    'Stop', 'No vehicles', 'Vehicles over 3.5 tons prohibited', 
     'No entry', 'General caution', 'Dangerous curve to the left', 
     'Dangerous curve to the right', 'Double curve', 'Bumpy road', 
     'Slippery road', 'Road narrows on the right', 'Road work', 
@@ -55,8 +54,8 @@ class_names = [
     'End of all speed and passing limits', 'Turn right ahead', 
     'Turn left ahead', 'Ahead only', 'Go straight or right', 
     'Go straight or left', 'Keep right', 'Keep left', 'Roundabout mandatory', 
-    'End of no passing', 'End of no passing by vehicles over 3.5 metric tons', ''
-]'''
+    'End of no passing', 'End of no passing by vehicles over 3.5 tons', ''
+]
 n_classes = len(class_names) - 1
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -87,104 +86,147 @@ transforms = {'train': T.Compose([
 }
 
 class_idx = 43
-def create_model(net_model, n_classes):
-
-  if(net_model=='resnet18_no'):
-    model= models.resnet18(pretrained = False, progress = True)
-    n_features = model.fc.in_features
-    model.fc = nn.Linear(n_features, n_classes)
-
-  if(net_model=='resnet18'):
-    model = models.resnet18(pretrained = True, progress = True)
-    n_features = model.fc.in_features
-    model.fc = nn.Linear(n_features, n_classes)  
-
-  if (net_model == 'alexnet'):
-    model = models.alexnet(pretrained = True, progress = True)
-    n_features = model.classifier[6].in_features
-    model.classifier[6] = nn.Linear(n_features,n_classes)
-
-  if(net_model == 'googleLeNet'):
-    model = torch.hub.load('pytorch/vision:v0.10.0', 'googlenet', pretrained=True)
-    n_features = model.fc.in_features
-    model.fc = nn.Linear(n_features, n_classes)
-
-  if(net_model=='mobilenet_v2'):
-    model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
-    model.classifier[1] = nn.Linear(model.last_channel, n_classes)
-
-  if(net_model=='mobilenet_v3'):
-    model = models.mobilenet_v3_small(pretrained=True, progress=True)
-    model.classifier[-1] = nn.Linear(1024, n_classes)
-
-  if(net_model == 'shufflenet_v2'):
-    model = torch.hub.load('pytorch/vision:v0.10.0', 'shufflenet_v2_x1_0', pretrained=True)
-    model.fc = nn.Linear(1024, n_classes)
-
-  if(net_model == 'efficientnet_b0'):
-    model = models.efficientnet_b0(pretrained=True, progress=True)
-    model.classifier[1] = nn.Linear(in_features=1280, out_features=n_classes)
-  return model.to(device)
 
 
-  
-
-'''
-
-resnet18_no = create_model("resnet18_no",n_classes)     
-resnet18_no.load_state_dict(torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_no/resnet18_no.pt' , map_location=device))
-resnet18_no.eval()
-    
-videoloop_stop[1] = True
-resnet18 = create_model("resnet18", n_classes)
-resnet18.load_state_dict(torch.load('/Modelli/resnet18/resnet18.pt', map_location = device)) 
-resnet18.eval()
- 
-alexnet = create_model("alexnet",n_classes)
-alexnet.load_state_dict(torch.load('/Modelli/alexnet/alexnet.pt', map_location = device)) 
-alexnet.eval()
-
-googleLeNet = create_model("googleLeNet",n_classes)
-googleLeNet.load_state_dict(torch.load('/Modelli/googleLeNet/googleLeNet.pt', map_location = device)) 
-googleLeNet.eval()
-
- 
-mobilenet_v2 = create_model("mobilenet_v2",n_classes)
-mobilenet_v2.load_state_dict(torch.load('/Modelli/mobilenet_v2/mobilenet_v2.pt', map_location = device)) 
-mobilenet_v2.eval()
-  
-mobilenet_v3 = create_model("mobilenet_v3",n_classes)
-mobilenet_v3.load_state_dict(torch.load('/Modelli/mobilenet_v3/mobilenet_v3.pt', map_location = device)) 
-mobilenet_v3.eval()
-  
-shufflenet_v2 = create_model("shufflenet_v2",n_classes)
-shufflenet_v2.load_state_dict(torch.load('/Modelli/shufflenet_v2/shufflenet_v2.pt', map_location = device)) 
-shufflenet_v2.eval()
-  
-efficientnet_b0 = create_model("efficientnet_b0",n_classes)
-efficientnet_b0.load_state_dict(torch.load('/Modelli/efficientnet_b0/efficientnet_b0.pt', map_location = device)) 
-efficientnet_b0.eval()
-'''
+def startButton_clicked(videoloop_stop):
+    startButton.configure(bg="green", fg="white")
+    stopButton.configure(bg="gray", fg="black")
+    threa = threading.Thread(target=videoLoop, args=(videoloop_stop,)).start()
 
 
-
-def startButton_clicked(videoloop_stop, pred):
-    threading.Thread(target=videoLoop, args=(videoloop_stop,)).start()
-
-
-def stopButton_clicked(videoloop_stop, pred):
+def stopButton_clicked(videoloop_stop):
+    stopButton.configure(bg="red", fg="white")
+    startButton.configure(bg="gray", fg="black")
     videoloop_stop[0] = True
-    pred[0] = False
 
-def resnet18_no_clicked(videoloop_stop, pred):
-    pred[0] = True
-    model[0] = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_no/resnet18_no_model.pt', map_location=device)
-    model[0]= model[0].eval()
 
-def resnet18_clicked(videoloop_stop, pred):
-    pred[0] = True
-    model[0] = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18/resnet18_model.pt', map_location=device)
-    model[0]= model[0].eval()
+def resnet18_no_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="green", fg="white")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
+
+  
+    videoloop_stop[1] = 'resnet18_no'
+    startButton_clicked(videoloop_stop)
+
+def resnet18_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="green", fg="white")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
+  
+
+    videoloop_stop[1] = 'resnet18'
+    startButton_clicked(videoloop_stop)
+
+def alexnet_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="green", fg="white")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
+  
+
+    videoloop_stop[1] = 'alexnet'
+    startButton_clicked(videoloop_stop)
+
+def googleLeNet_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="green", fg="white")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
+
+
+    videoloop_stop[1] = 'googleLeNet'
+    startButton_clicked(videoloop_stop)
+
+def shufflenet_v2_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="green", fg="white")
+  
+
+    videoloop_stop[1] = 'shufflenet_v2'
+    startButton_clicked(videoloop_stop)
+
+def mobilenet_v2_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="green", fg="white")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
+  
+
+    videoloop_stop[1] = 'mobilenet_v2'
+    startButton_clicked(videoloop_stop)
+
+def mobilenet_v3_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="green", fg="white")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
+  
+
+    videoloop_stop[1] = 'mobilenet_v3'
+    startButton_clicked(videoloop_stop)
+
+def efficientnet_b0_clicked(videoloop_stop):
+    stopButton_clicked(videoloop_stop)
+    
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="green", fg="white")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
+
+    
+    videoloop_stop[1] = 'efficientnet_b0'
+    startButton_clicked(videoloop_stop)
 
 
 def videoLoop(mirror=True):
@@ -192,7 +234,32 @@ def videoLoop(mirror=True):
     cap = cv2.VideoCapture(No)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 900)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 700)
-
+    if(videoloop_stop[1] == 'resnet18_no' or videoloop_stop[1] == 'nessuna'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_backup/resnet18_vecchio_model.pt', map_location=device)
+      modello.eval()
+    elif(videoloop_stop[1] == 'resnet18'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_backup/resnet18_vecchio_model.pt', map_location=device)
+      modello.eval()
+    elif(videoloop_stop[1] == 'alexnet'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
+      modello.eval()
+      '''
+    elif(videoloop_stop[1] == 'googleLeNet'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/googleLeNet/googleLeNet_model.pt', map_location=device)
+      modello.eval()
+    elif(videoloop_stop[1] == 'shufflenet_v2'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/shufflenet_v2/shufflenet_v2_model.pt', map_location=device)
+      modello.eval()
+    elif(videoloop_stop[1] == 'mobilenet_v2'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/mobilenet_v2/mobilenet_v2_model.pt', map_location=device)
+      modello.eval()
+    elif(videoloop_stop[1] == 'mobilenet_v3'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/mobilenet_v3/mobilenet_v3_model.pt', map_location=device)
+      modello.eval()
+    elif(videoloop_stop[1] == 'efficientnet_b0'):
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/efficientnet_b0/efficientnet_b0_model.pt', map_location=device)
+      modello.eval()
+    '''
     while True:
         ret, to_draw = cap.read()
         if mirror is True:
@@ -201,21 +268,29 @@ def videoLoop(mirror=True):
         image = cv2.cvtColor(to_draw, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
 
+        correct_count = 0
+        frame_count = 0 # To count total frames.
+        total_fps = 0 # To get the final frames per second. 
+        test_images = 0
         #if pred[0] == True:
         if True:
-            image2 = cv2.cvtColor(to_draw, cv2.COLOR_BGR2RGB)
-            image2 = Image.fromarray(image2)
+            #image2 = cv2.cvtColor(to_draw, cv2.COLOR_BGR2RGB)
+            #image2 = Image.fromarray(image2)
 
             #Predizione modello
-            image2 = transforms['test'](image2).unsqueeze(0)
-            
-            modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_backup/resnet18_vecchio_model.pt', map_location=device)
-            modello.eval()
+            image2 = transforms['test'](image).unsqueeze(0) 
+
             
             #modello.eval()
+            start_time = time.time()
             pred = modello(image2.to(device))
+            end_time = time.time()
             pred = F.softmax(pred, dim=1)
             _, class_idx[0] = torch.max(pred,1)
+
+            fps = 1 / (end_time - start_time)
+            total_fps += fps
+            frame_count += 1
 
             '''
             #Scrittura su frame mostrato
@@ -228,19 +303,24 @@ def videoLoop(mirror=True):
                     fontFace=label_font, #fontFace=cv2.FONT_HERSHEY_TRIPLEX,
                     fontScale=1.5, color=(0, 255, 0),thickness=1)
             '''
-        
 
-        
         image = ImageTk.PhotoImage(image)
         #label = tk.Label(root, text='Funziona', image=image, compound='center')
         #label.pack()
         #tk.Label(root, image=image, text="Update User",
                  #compound=tk.CENTER).pack() # Put it in the display window
-        
-        panel = tk.Label(root, image=image, text=class_names[class_idx[0]], compound='bottom')
-        panel.config(font=("Courier", 25))
-        panel.config(fg="#FFFFFF")
-        panel.config(bg="green")
+        if(videoloop_stop[1]=='nessuna'):
+          testo = 'Scegliere una rete'
+          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 20, text=testo, compound='bottom')
+          panel.config(font=("Courier", 24))
+          panel.config(fg="#FFFFFF")
+          panel.config(bg="red")
+        else:
+          testo = class_names[class_idx[0]]+'\nFPS: '+str(round(total_fps))
+          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 30, text=testo, compound='bottom')
+          panel.config(font=("Courier", 24))
+          panel.config(fg="#FFFFFF")
+          panel.config(bg="green")
         panel.image = image
         panel.place(x=50, y=50)
 
@@ -253,9 +333,8 @@ def videoLoop(mirror=True):
 
 
 # videoloop_stop is a simple switcher between ON and OFF modes
-videoloop_stop = [False]
+videoloop_stop = [False, 'nessuna']
 
-pred = [False]
 class_idx = [43]
 model = []
 root = tk.Tk()
@@ -276,62 +355,62 @@ canvas.pack()
 #START
 startButton = tk.Button(
     root, text="start", bg="#fff", font=("", 20),
-    command=lambda: startButton_clicked(videoloop_stop, pred))
+    command=lambda: startButton_clicked(videoloop_stop))
 startButton.place(x=1000, y=50, width=140, height=90)
 
 #STOP
 stopButton = tk.Button(
     root, text="stop", bg="#fff", font=("", 20),
-    command=lambda: stopButton_clicked(videoloop_stop, pred))
+    command=lambda: stopButton_clicked(videoloop_stop))
 stopButton.place(x=1160, y=50, width=140, height=90)
 
 #RESNET18_NO
-resnet18_no = tk.Button(
+resnet18_no_Button = tk.Button(
     root, text="resnet18_no", bg="#fff", font=("", 15),
-    command=lambda: resnet18_no_clicked(videoloop_stop, pred))
-resnet18_no.place(x=1000, y=250, width=140, height=80)
+    command=lambda: resnet18_no_clicked(videoloop_stop))
+resnet18_no_Button.place(x=1000, y=250, width=140, height=80)
 
 #RESNET18
-resnet18 = tk.Button(
+resnet18_Button = tk.Button(
     root, text="resnet18", bg="#fff", font=("", 15),
-    command=lambda: resnet18_clicked(videoloop_stop, pred))
-resnet18.place(x=1140, y=250, width=140, height=80)
+    command=lambda: resnet18_clicked(videoloop_stop))
+resnet18_Button.place(x=1140, y=250, width=140, height=80)
 
 #ALEXNET
-alexnet = tk.Button(
+alexnet_Button = tk.Button(
     root, text="alexnet", bg="#fff", font=("", 15),
-    command=lambda: alexnet_clicked(videoloop_stop, pred))
-alexnet.place(x=1000, y=330, width=140, height=80)
+    command=lambda: alexnet_clicked(videoloop_stop))
+alexnet_Button.place(x=1000, y=330, width=140, height=80)
 
 #GOOGLELENET
-googleLeNet = tk.Button(
+googleLeNet_Button = tk.Button(
     root, text="googleLeNet", bg="#fff", font=("", 15),
-    command=lambda: googleLeNet_clicked(videoloop_stop, pred))
-googleLeNet.place(x=1140, y=330, width=140, height=80)
+    command=lambda: googleLeNet_clicked(videoloop_stop))
+googleLeNet_Button.place(x=1140, y=330, width=140, height=80)
 
 #MOBILENET_v2
-mobilenet_v2 = tk.Button(
+mobilenet_v2_Button = tk.Button(
     root, text="mobilenet_v2", bg="#fff", font=("", 15),
-    command=lambda: mobilenet_v2_clicked(videoloop_stop, pred))
-mobilenet_v2.place(x=1000, y=410, width=140, height=80)
+    command=lambda: mobilenet_v2_clicked(videoloop_stop))
+mobilenet_v2_Button.place(x=1000, y=410, width=140, height=80)
 
 #MOBILENET_v3
-mobilenet_v3 = tk.Button(
+mobilenet_v3_Button = tk.Button(
     root, text="mobilenet_v3", bg="#fff", font=("", 15),
-    command=lambda: mobilenet_v3_clicked(videoloop_stop, pred))
-mobilenet_v3.place(x=1140, y=410, width=140, height=80)
+    command=lambda: mobilenet_v3_clicked(videoloop_stop))
+mobilenet_v3_Button.place(x=1140, y=410, width=140, height=80)
 
 #efficientnet_b0
-efficientnet_b0 = tk.Button(
+efficientnet_b0_Button = tk.Button(
     root, text="efficientnet_b0", bg="#fff", font=("", 15),
-    command=lambda: shufflenet_v2_clicked(videoloop_stop, pred))
-efficientnet_b0.place(x=1000, y=490, width=140, height=80)
+    command=lambda: shufflenet_v2_clicked(videoloop_stop))
+efficientnet_b0_Button.place(x=1000, y=490, width=140, height=80)
 
 #sufflenet_v2
-shufflenet_v2 = tk.Button(
+shufflenet_v2_Button = tk.Button(
     root, text="shufflenet_v2", bg="#fff", font=("", 15),
-    command=lambda: shufflenet_v2_clicked(videoloop_stop, pred))
-shufflenet_v2.place(x=1140, y=490, width=140, height=80)
+    command=lambda: shufflenet_v2_clicked(videoloop_stop))
+shufflenet_v2_Button.place(x=1140, y=490, width=140, height=80)
 
 
 
