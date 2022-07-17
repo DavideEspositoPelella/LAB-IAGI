@@ -43,9 +43,9 @@ from torchvision import models
 
 sns.set(style='whitegrid', palette='muted', font_scale=1.2)
 
-#HAPPY_COLORS_PALETTE = ["#01BEFE", "#FFDD00", "#FF7D00", "#FF006D", "#ADFF02", "#8F00FF"]
+#COLORS = ["#01BEFE", "#FFDD00", "#FF7D00", "#FF006D", "#ADFF02", "#8F00FF"]
 
-#sns.set_palette(sns.color_palette(HAPPY_COLORS_PALETTE))
+#sns.set_palette(sns.color_palette(COLORS))
 rcParams['figure.figsize'] = 12, 8
 #####
 
@@ -252,8 +252,8 @@ transforms = {'train': T.Compose([
   T.ColorJitter(brightness=0.7, contrast=0.3, saturation=0.4, hue=0), #modifica condizioni foto
   T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)), #blur
   T.ToTensor(),
-  T.Normalize(mean_nums, std_nums)
-  #T.RandomApply([AddGaussianNoise(0.1, 0.4)], p=0.4)  #rumore sensore
+  T.Normalize(mean_nums, std_nums),
+  T.RandomApply([AddGaussianNoise(0.1, 0.4)], p=0.4)  #rumore sensore
 ]), 'val': T.Compose([
   T.Resize(size=256),
   T.CenterCrop(size=224),
@@ -464,8 +464,8 @@ def train_model(model,net, data_loaders, dataset_sizes, device, n_epochs=10):
     PATH2 = 'drive/MyDrive/Modelli/mobilenet_v2/mobilenet_v2_model.pt'
 
   if(net=='mobilenet_v3'):
-    PATH1 = 'drive/MyDrive/Modelli/mobilenet_v2/mobilenet_v3.pt'
-    PATH2 = 'drive/MyDrive/Modelli/mobilenet_v2/mobilenet_v3_model.pt'
+    PATH1 = 'drive/MyDrive/Modelli/mobilenet_v3/mobilenet_v3.pt'
+    PATH2 = 'drive/MyDrive/Modelli/mobilenet_v3/mobilenet_v3_model.pt'
 
   if(net == 'shufflenet_v2'):
     PATH1 = 'drive/MyDrive/Modelli/shufflenet_v2/shufflenet_v2.pt'
@@ -628,8 +628,8 @@ def plot_training_history(history):
   ax2.set_ylabel('Accuracy')
   ax2.set_xlabel('Epoch')
 
-  fig.suptitle('Training history alexnet')
-  fig.savefig('drive/MyDrive/Modelli/alexnet/alexnet.png')
+  fig.suptitle('Training history shufflenet_v2')
+  fig.savefig('drive/MyDrive/Modelli/shufflenet_v2/shufflenet_v2.png')
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 plot_training_history(history)
@@ -777,14 +777,35 @@ from tqdm import tqdm
 
 #resnet18 = torch.load('drive/MyDrive/Modelli/resnet18/resnet18_model.pt', map_location=device)
 #resnet18.eval() 
+#base_model = resnet18
 
 #alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
 #alexnet.eval()
+#base_model = alexnet
 
-alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_model.pt', map_location=device)
-alexnet.eval()
+#alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
+#alexnet.eval()
+#base_model = alexnet
 
-base_model = alexnet
+#googleLeNet = torch.load('drive/MyDrive/Modelli/googleLeNet/googleLeNet_model.pt', map_location=device)
+#googleLeNet.eval()
+#base_model = googleLeNet
+
+#mobilenet_v2 = torch.load('drive/MyDrive/Modelli/mobilenet_v2/mobilenet_v2_model.pt', map_location=device)
+#mobilenet_v2.eval()
+#base_model = mobilenet_v2
+
+#mobilenet_v3 = torch.load('drive/MyDrive/Modelli/mobilenet_v3/mobilenet_v3_model.pt', map_location=device)
+#mobilenet_v3.eval()
+#base_model = mobilenet_v3
+
+shufflenet_v2 = torch.load('drive/MyDrive/Modelli/shufflenet_v2/shufflenet_v2_model.pt', map_location=device)
+shufflenet_v2.eval()
+base_model = shufflenet_v2
+
+#efficientnet_b0 = torch.load('drive/MyDrive/Modelli/efficientnet_b0/efficientnet_b0_model.pt', map_location=device)
+#efficientnet_b0.eval()
+#base_model = efficientnet_b0
 
 # DataFrame for ground truth.
 gt_df = pd.read_csv('GT-final_test.csv', delimiter=';' )
@@ -870,7 +891,7 @@ print()
 #img_path = 'stop-sign.jpg' #stop
 #img_path = 'drive/MyDrive/inference/IMG_20220710_195852_099.jpg' #speed_limit 30
 #img_path = 'drive/MyDrive/inference/IMG_20220710_200527.jpg'  #round_about_mandatory
-#img_path = 'drive/MyDrive/inference/IMG_20220710_193242_762.jpg' #no_entry
+img_path = 'drive/MyDrive/inference/IMG_20220710_193242_762.jpg' #no_entry
 #img_path = 'drive/MyDrive/inference/IMG_20220710_195854_666.jpg'  #priority road
 #img_path = 'drive/MyDrive/inference/20220710_191336.jpg'  #keep right
 #img_path = 'drive/MyDrive/inference/20220710_191319.jpg'   #no entry (rovinatissimo)
@@ -895,9 +916,17 @@ def predict_proba(model, image_path):
 #resnet18_no.eval() 
 #base_model = resnet18_no
 
-alexnet_rumore = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
-alexnet_rumore.eval()
-base_model = alexnet_rumore
+#alexnet_rumore = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
+#alexnet_rumore.eval()
+#base_model = alexnet_rumore
+
+#alexnet_rumore = torch.load('drive/MyDrive/Modelli/googleLeNet/googleLeNet_model.pt', map_location=device)
+#alexnet_rumore.eval()
+#base_model = alexnet_rumore
+
+mobilenet_v3 = torch.load('drive/MyDrive/Modelli/mobilenet_v3/mobilenet_v3_model.pt', map_location=device)
+mobilenet_v3.eval()
+base_model = mobilenet_v3
 
 
 pred = predict_proba(base_model, img_path)
