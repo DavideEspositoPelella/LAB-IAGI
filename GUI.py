@@ -26,7 +26,7 @@ global model
 global show
 import os
 show = [False]
-'''
+
 class_names = [
     'Limite velocità 20km/h', 'Limite velocità 30km/h', 'Limite velocità 50km/h', 
     'Limite velocità 60km/h', 'Limite velocità 70km/h', 'Limite velocità 80km/h', 
@@ -43,9 +43,9 @@ class_names = [
     'Fine di tutti i limiti di velocità e sorpasso', 'Obbligo svolta a destra avanti', 
     'Svolta a sinistra avanti', 'Obbligo diritto', 'Obbligo diritto o destra', 
     'Obbligo diritto o sinistra', 'Mantieni la destra', 'Mantieni la sinistra', 'Rotatoria', 
-    'Fine del divieto di sorpasso', 'Fine divieto di sorpasso Veicoli oltre 3.5 tonn', ''
-]'''
-
+    'Fine del divieto di sorpasso', 'Fine divieto sorpasso Veicoli oltre 3.5ton', ''
+]
+'''
 class_names = [
     'Speed limit (20km/h)', 'Speed limit (30km/h)', 'Speed limit (50km/h)', 
     'Speed limit (60km/h)', 'Speed limit (70km/h)', 'Speed limit (80km/h)', 
@@ -64,28 +64,14 @@ class_names = [
     'Go straight or left', 'Keep right', 'Keep left', 'Roundabout mandatory', 
     'End of no passing', 'End of no passing vehicles over 3.5 tons', ''
 ]
+'''
 n_classes = len(class_names) - 1
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 mean_nums = [0.485, 0.456, 0.406]
 std_nums = [0.229, 0.224, 0.225]
-transforms = {'train': T.Compose([
-  T.RandomResizedCrop(size=256),
-  T.RandomAffine(degrees=(-20, 20), translate=(0.1,0.3), scale=(0.7,1), shear=(-20, 20)),
-  #T.RandomErasing(), #cancella autonomamente parti dell'immagine
-  #AddGaussianNoise(0.1, 0.08),  #rumore gaussiano (vero e proprio "rumore del sensore", disturbo)
-  T.ColorJitter(brightness=0.7, contrast=0.3, saturation=0.4, hue=0), #modifica condizioni foto
-  T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)), #blur
-  T.ToTensor(),
-  T.Normalize(mean_nums, std_nums)
-
-]), 'val': T.Compose([
-  T.Resize(size=256),
-  T.CenterCrop(size=224),
-  T.ToTensor(),
-  T.Normalize(mean_nums, std_nums)
-]), 'test': T.Compose([
+transforms = {'test': T.Compose([
   T.Resize(size=256),
   T.CenterCrop(size=224),
   T.ToTensor(),
@@ -106,8 +92,16 @@ def startButton_clicked(videoloop_stop):
 def stopButton_clicked(videoloop_stop):
     stopButton.configure(bg="red", fg="white")
     startButton.configure(bg="gray", fg="black")
-    videoloop_stop[0] = True
     videoloop_stop[1]=='nessuna'
+    videoloop_stop[0] = True
+    resnet18_no_Button.configure(bg="white", fg="black")
+    resnet18_Button.configure(bg="white", fg="black")
+    alexnet_Button.configure(bg="white", fg="black")
+    googleLeNet_Button.configure(bg="white", fg="black")
+    mobilenet_v2_Button.configure(bg="white", fg="black")
+    mobilenet_v3_Button.configure(bg="white", fg="black")
+    efficientnet_b0_Button.configure(bg="white", fg="black")
+    shufflenet_v2_Button.configure(bg="white", fg="black")
 
 
 def resnet18_no_clicked(videoloop_stop):
@@ -238,32 +232,6 @@ def efficientnet_b0_clicked(videoloop_stop):
     videoloop_stop[1] = 'efficientnet_b0'
     startButton_clicked(videoloop_stop)
 
-def info_clicked(videoloop_stop):
-    videoloop_stop[1] = 'info'
-    resnet18_no_Button.configure(bg="white", fg="black")
-    resnet18_Button.configure(bg="white", fg="black")
-    alexnet_Button.configure(bg="white", fg="black")
-    googleLeNet_Button.configure(bg="white", fg="black")
-    mobilenet_v2_Button.configure(bg="white", fg="black")
-    mobilenet_v3_Button.configure(bg="white", fg="black")
-    efficientnet_b0_Button.configure(bg="white", fg="black")
-    shufflenet_v2_Button.configure(bg="white", fg="black")
-
-    image = ImageTk.PhotoImage(filename='architectures-plot.png')
-    panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 20, text='Info', compound='bottom')
-    panel.config(bg="yellow")
-    panel.config(font=("Courier", 24))
-    panel.config(fg="#FFFFFF")
-    panel.image = image
-    panel.place(x=50, y=50)
-'''
-    from tkinter import *
-root=Tk()
-img=PhotoImage(file='sunshine.jpg')
-Label(root,image=img).pack()
-root.mainloop()
-
-'''
 def openInfoWindow():
     '''
     filename = filedialog.askopenfilename(initialdir=os.getcwd(
@@ -273,7 +241,16 @@ def openInfoWindow():
     # setup new window
     new_window = Toplevel(root)
     # get image
-    image = ImageTk.PhotoImage(Image.open('C:/Users/admin/Desktop/GUI_tesi/architectures-plot.png'))
+    image = ImageTk.PhotoImage(Image.open('C:/Users/admin/Desktop/GUI_tesi/tabella-reti.png'))
+    # load image
+    panel = Label(new_window, image=image)
+    panel.image = image
+    panel.pack()
+
+def openGraphWindow():
+    new_window = Toplevel(root)
+    # get image
+    image = ImageTk.PhotoImage(Image.open('C:/Users/admin/Desktop/GUI_tesi/graph-reti.png'))
     # load image
     panel = Label(new_window, image=image)
     panel.image = image
@@ -282,16 +259,16 @@ def openInfoWindow():
 
 def videoLoop(mirror=True):
     cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 800)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 900)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 700)
     if(videoloop_stop[1] == 'resnet18_no' or videoloop_stop[1] == 'nessuna'):
-      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_backup/resnet18_vecchio_model.pt', map_location=device)
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_no/resnet18_no_model.pt', map_location=device)
       modello.eval()
     elif(videoloop_stop[1] == 'resnet18'):
-      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18_backup/resnet18_vecchio_model.pt', map_location=device)
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/resnet18/resnet18_model.pt', map_location=device)
       modello.eval()
     elif(videoloop_stop[1] == 'alexnet'):
-      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
+      modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/alexnet/alexnet_model.pt', map_location=device)
       modello.eval()
     
     elif(videoloop_stop[1] == 'googleLeNet'):
@@ -301,11 +278,11 @@ def videoLoop(mirror=True):
     elif(videoloop_stop[1] == 'shufflenet_v2'):
       modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/shufflenet_v2/shufflenet_v2_model.pt', map_location=device)
       modello.eval()
-      '''
+    
     elif(videoloop_stop[1] == 'mobilenet_v2'):
       modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/mobilenet_v2/mobilenet_v2_model.pt', map_location=device)
       modello.eval()
-    '''
+    
     elif(videoloop_stop[1] == 'mobilenet_v3'):
       modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/mobilenet_v3/mobilenet_v3_model.pt', map_location=device)
       modello.eval()
@@ -316,8 +293,8 @@ def videoLoop(mirror=True):
     
     while True:
         ret, to_draw = cap.read()
-        if mirror is True:
-            to_draw = to_draw[:, ::-1]
+        #if mirror is True:
+        #    to_draw = to_draw[:, ::-1]
 
         image = cv2.cvtColor(to_draw, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
@@ -326,19 +303,23 @@ def videoLoop(mirror=True):
         frame_count = 0 # To count total frames.
         total_fps = 0 # To get the final frames per second. 
         test_images = 0
-        #if pred[0] == True:
-        if True:
+        #if True:
+        if(videoloop_stop[1]=='nessuna'):
+          image = ImageTk.PhotoImage(image)
+          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 20, text='Scegliere una rete', compound='bottom')
+          panel.config(bg="red")
+        else:
             #image2 = cv2.cvtColor(to_draw, cv2.COLOR_BGR2RGB)
             #image2 = Image.fromarray(image2)
 
             #Predizione modello
             image2 = transforms['test'](image).unsqueeze(0) 
 
-            
             #modello.eval()
             start_time = time.time()
             pred = modello(image2.to(device))
             end_time = time.time()
+            tresh = pred
             pred = F.softmax(pred, dim=1)
             _, class_idx[0] = torch.max(pred,1)
 
@@ -358,24 +339,17 @@ def videoLoop(mirror=True):
                     fontScale=1.5, color=(0, 255, 0),thickness=1)
             '''
 
-        
-        #label = tk.Label(root, text='Funziona', image=image, compound='center')
-        #label.pack()
-        #tk.Label(root, image=image, text="Update User",
-                 #compound=tk.CENTER).pack() # Put it in the display window
-        if(videoloop_stop[1]=='nessuna'):
-          image = ImageTk.PhotoImage(image)
-          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 20, text='Scegliere una rete', compound='bottom')
-          panel.config(bg="red")
-        elif(videoloop_stop[1]=='info'):
-          image = ImageTk.PhotoImage(Image.open('architectures-plot.png'))
-          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 10, text='Info', compound='bottom')
-          panel.config(bg="yellow")
-        else:
-          image = ImageTk.PhotoImage(image)
-          testo = class_names[class_idx[0]]+'\nFPS: '+str(round(total_fps))
-          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 30, text=testo, compound='bottom')
-          panel.config(bg="green")
+        #else:
+            if tresh[0][class_idx[0]]>7.01:
+              image = ImageTk.PhotoImage(image)
+              testo = class_names[class_idx[0]]+'\nFPS: '+str(round(total_fps))
+              panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 30, text=testo, compound='bottom')
+              panel.config(bg="green")
+            else:
+              image = ImageTk.PhotoImage(image)
+              testo = 'Sconosciuto\nFPS: '+str(round(total_fps))
+              panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 30, text=testo, compound='bottom')
+              panel.config(bg="orange")
         panel.config(font=("Courier", 24))
         panel.config(fg="#FFFFFF")
         panel.image = image
@@ -397,17 +371,6 @@ model = []
 root = tk.Tk()
 root.title('Traffic Sign Recognition inference')
 root.geometry("1920x1080+0+0")
-#root.geometry("3840x2169+0+0")
-'''
-canvas = Canvas(
-    root,
-    height=1080,
-    width=1920,
-    bg=None,
-    )
-
-canvas.pack()
-'''
 
 #START
 startButton = tk.Button(
@@ -474,5 +437,11 @@ info_Button = tk.Button(
     root, text="info", bg="#fff", font=("",15),
     command=lambda: openInfoWindow())
 info_Button.place(x=1160, y=580, width=100, height=50)
+
+#graph
+graph_Button = tk.Button(
+    root, text="graph", bg="#fff", font=("",15),
+    command=lambda: openGraphWindow())
+graph_Button.place(x=1050, y=580, width=100, height=50)
 
 root.mainloop()
