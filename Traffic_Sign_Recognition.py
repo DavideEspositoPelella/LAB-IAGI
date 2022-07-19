@@ -356,15 +356,6 @@ def create_model(net_model, n_classes):
     model = models.efficientnet_b0(pretrained=True, progress=True)
     model.classifier[1] = nn.Linear(in_features=1280, out_features=n_classes)
 
-#  if(net_model == 'NASNet-A-Mobile'):
-#    #model = timm.create_model('nasnetalarge', pretrained=True, num_classes=NUM_FINETUNE_CLASSES)
-#    #nasnetamobile(num_classes=1000, pretrained='imagenet')
-#    model = models.nasnetmobile(pretrained = True, progress=True)
-
-
-    #model = models.mobilenet_v3_small(pretrained=True, progress=True)
-    #print(model.classifier) 
-
   return model.to(device)
 
 """### Training
@@ -474,6 +465,7 @@ def train_model(model,net, data_loaders, dataset_sizes, device, n_epochs=10):
   if(net == 'efficientnet_b0'):
     PATH1 = 'drive/MyDrive/Modelli/efficientnet_b0/efficientnet_b0.pt'
     PATH2 = 'drive/MyDrive/Modelli/efficientnet_b0/efficientnet_b0_model.pt'
+   
 
   for epoch in range(n_epochs):
 
@@ -630,7 +622,7 @@ def plot_training_history(history):
 
   fig.suptitle('Training history shufflenet_v2')
   fig.savefig('drive/MyDrive/Modelli/shufflenet_v2/shufflenet_v2.png')
-  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 plot_training_history(history)
 
@@ -743,6 +735,7 @@ show_confusion_matrix(cm, class_names)
 
 """##TEST e FPS"""
 
+from torchvision.models.resnet import resnet18
 import numpy as np
 import cv2
 import torch
@@ -774,16 +767,13 @@ from tqdm import tqdm
 
 #resnet18_no = torch.load('drive/MyDrive/Modelli/resnet18_no/resnet18_no_model.pt', map_location=device)
 #resnet18_no.eval() 
+#base_model=resnet18_no
 
 #resnet18 = torch.load('drive/MyDrive/Modelli/resnet18/resnet18_model.pt', map_location=device)
 #resnet18.eval() 
 #base_model = resnet18
 
-#alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
-#alexnet.eval()
-#base_model = alexnet
-
-#alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_rumore_model.pt', map_location=device)
+#alexnet = torch.load('drive/MyDrive/Modelli/alexnet/alexnet_model.pt', map_location=device)
 #alexnet.eval()
 #base_model = alexnet
 
@@ -791,7 +781,7 @@ from tqdm import tqdm
 #googleLeNet.eval()
 #base_model = googleLeNet
 
-#mobilenet_v2 = torch.load('drive/MyDrive/Modelli/mobilenet_v2/mobilenet_v2_model.pt', map_location=device)
+#mobilenet_v2 = torch.load('drive/MyDrive/Modelli/mobilenet_v2/mobilenet_v2_noRumore_model.pt', map_location=device)
 #mobilenet_v2.eval()
 #base_model = mobilenet_v2
 
@@ -799,20 +789,24 @@ from tqdm import tqdm
 #mobilenet_v3.eval()
 #base_model = mobilenet_v3
 
-shufflenet_v2 = torch.load('drive/MyDrive/Modelli/shufflenet_v2/shufflenet_v2_model.pt', map_location=device)
-shufflenet_v2.eval()
-base_model = shufflenet_v2
+#shufflenet_v2 = torch.load('drive/MyDrive/Modelli/shufflenet_v2/shufflenet_v2_model.pt', map_location=device)
+#shufflenet_v2.eval()
+#base_model = shufflenet_v2
 
-#efficientnet_b0 = torch.load('drive/MyDrive/Modelli/efficientnet_b0/efficientnet_b0_model.pt', map_location=device)
-#efficientnet_b0.eval()
-#base_model = efficientnet_b0
+efficientnet_b0 = torch.load('drive/MyDrive/Modelli/efficientnet_b0/efficientnet_b0_model.pt', map_location=device)
+efficientnet_b0.eval()
+base_model = efficientnet_b0
 
 # DataFrame for ground truth.
 gt_df = pd.read_csv('GT-final_test.csv', delimiter=';' )
 gt_df = gt_df.set_index('Filename', drop=True)
 
+a = []
+b = []
 predictions = []
 ground_truth = []
+#predictions = torch.FloatTensor(a)
+#ground_truth = torch.FloatTensor(b)
 
 counter = 0
 
@@ -827,9 +821,10 @@ for filename in tqdm(os.scandir('GTSRB/Final_Test/Images')):
     #print(filename.path) 
     if(filename.path == 'GTSRB/Final_Test/Images/GT-final_test.test.csv'):
       continue
+    
     test_images+=1
  
-    #if(test_images==1000):
+    #if(test_images==200):
     #  break
 
     img = Image.open(filename.path)
@@ -840,33 +835,35 @@ for filename in tqdm(os.scandir('GTSRB/Final_Test/Images')):
     start_time = time.time()
     pred = base_model(img.to(device)) 
     end_time = time.time()
-    # Get the softmax probabilities.
+    # Applica softmax probabilità.
     pred = F.softmax(pred, dim=1)#probs = F.softmax(outputs).data.squeeze()
 
     _, class_idx = torch.max(pred,1)
     #class_idx = convert(class_idx.item())
 
-    # Get the ground truth.
+    # ground truth.
     image_name = filename.path.split(os.path.sep)[-1]
     gt_idx = gt_df.loc[image_name].ClassId
 
     if gt_idx == class_idx:
       correct_count += 1
-    else:
-      print('Sbagliato:')
-      print('Image_path:',filename.path, 'prediction:',class_idx,'ground_truth:',gt_idx)
-      print()
-      print()
+    #else:
+    #  print('Sbagliato:')
+    #  print('Image_path:',filename.path, 'prediction:',class_idx,'ground_truth:',gt_idx)
+    #  print()
+    #  print()
+
+    #predictions.append(class_idx)
+    #ground_truth.append(gt_idx)
     predictions.append(class_idx)
-    ground_truth.append(gt_idx)
-    #predictions.extends(class_idx)
-    #ground_truth.extends(gt_idx)       
-    #predictions = torch.as_tensor(predictions).cpu()
-    #ground_truth = torch.as_tensor(ground_truth).cpu() 
+    ground_truth.append(gt_idx)       
+ 
     fps = 1 / (end_time - start_time)
     total_fps += fps
     frame_count += 1
-  
+predictions = torch.as_tensor(predictions).cpu()
+ground_truth = torch.as_tensor(ground_truth).cpu()
+
 print(f"Total number of test images: {test_images}")
 print(f"Total correct predictions: {correct_count}")
 print(f"Accuracy: {correct_count/test_images*100:.3f}")
@@ -878,7 +875,7 @@ print(f"Average FPS: {avg_fps:.3f}")
 """##Altre Metriche"""
 
 print(classification_report(predictions, ground_truth, target_names=class_names))
-print("Accuracy:",accuracy_score(ground_truth, ground_truth, normalize=True, sample_weight=None))
+#print("Accuracy:",accuracy_score(ground_truth, ground_truth, normalize=True, sample_weight=None))
 print()
 
 """## Classificazione immagine non vista

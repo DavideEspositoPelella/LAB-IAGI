@@ -32,7 +32,7 @@ class_names = [
     'Limite velocità 60km/h', 'Limite velocità 70km/h', 'Limite velocità 80km/h', 
     'Fine limite velocità 80km/h', 'Limite velocità 100km/h', 
     'Limite velocità 120km/h', 'Divieto di sorpasso', 
-    'Divieto sorpasso per veicoli oltre 3.5 tonn', 
+    'Divieto sorpasso per veicoli oltre 3.5ton', 
     "Diritto precedenza all' incrocio", 'Strada prioritaria', 'Dare precedenza', 
     'Stop', 'Divieto di transito', 'Divieto di transito Veicoli oltre 3.5 tonn', 
     'Senso vietato', 'Pericolo generico', 'Curva pericolosa a sinistra', 
@@ -40,7 +40,7 @@ class_names = [
     'Strada sdrucciolevole', 'Restringimento carreggiata destra', 'Cantieri stradali', 
     'Semaforo', 'Attraversamento pedonale', 'Attraversamento bambini', 
     'Attraversamento ciclabile', 'Pericolo ghiaccio/neve', 'Attraversamento animali selvatici', 
-    'Fine di tutti i limiti di velocità e sorpasso', 'Obbligo svolta a destra avanti', 
+    'Fine dei limiti di velocità e sorpasso', 'Obbligo svolta a destra avanti', 
     'Svolta a sinistra avanti', 'Obbligo diritto', 'Obbligo diritto o destra', 
     'Obbligo diritto o sinistra', 'Mantieni la destra', 'Mantieni la sinistra', 'Rotatoria', 
     'Fine del divieto di sorpasso', 'Fine divieto sorpasso Veicoli oltre 3.5ton', ''
@@ -85,6 +85,7 @@ class_idx = 43
 def startButton_clicked(videoloop_stop):
     startButton.configure(bg="green", fg="white")
     stopButton.configure(bg="gray", fg="black")
+    videoloop_stop[0] == False
     videoloop_stop[1]=='nessuna'
     threa = threading.Thread(target=videoLoop, args=(videoloop_stop,)).start()
 
@@ -94,14 +95,14 @@ def stopButton_clicked(videoloop_stop):
     startButton.configure(bg="gray", fg="black")
     videoloop_stop[1]=='nessuna'
     videoloop_stop[0] = True
-    resnet18_no_Button.configure(bg="white", fg="black")
-    resnet18_Button.configure(bg="white", fg="black")
-    alexnet_Button.configure(bg="white", fg="black")
-    googleLeNet_Button.configure(bg="white", fg="black")
-    mobilenet_v2_Button.configure(bg="white", fg="black")
-    mobilenet_v3_Button.configure(bg="white", fg="black")
-    efficientnet_b0_Button.configure(bg="white", fg="black")
-    shufflenet_v2_Button.configure(bg="white", fg="black")
+    #resnet18_no_Button.configure(bg="white", fg="black")
+    #resnet18_Button.configure(bg="white", fg="black")
+    #alexnet_Button.configure(bg="white", fg="black")
+    #googleLeNet_Button.configure(bg="white", fg="black")
+    #mobilenet_v2_Button.configure(bg="white", fg="black")
+    #mobilenet_v3_Button.configure(bg="white", fg="black")
+    #efficientnet_b0_Button.configure(bg="white", fg="black")
+    #shufflenet_v2_Button.configure(bg="white", fg="black")
 
 
 def resnet18_no_clicked(videoloop_stop):
@@ -233,25 +234,18 @@ def efficientnet_b0_clicked(videoloop_stop):
     startButton_clicked(videoloop_stop)
 
 def openInfoWindow():
-    '''
-    filename = filedialog.askopenfilename(initialdir=os.getcwd(
-    ), title="Select file", filetypes=(("png images", ".png"), ("all files", "*.*")))
-    if not filename:
-        return'''
-    # setup new window
+    # crea nuova window
     new_window = Toplevel(root)
-    # get image
-    image = ImageTk.PhotoImage(Image.open('C:/Users/admin/Desktop/GUI_tesi/tabella-reti.png'))
-    # load image
+    # ottieni
+    image = ImageTk.PhotoImage(Image.open('C:/Users/admin/Desktop/GUI/src/tabella-reti.png'))
+    # carica
     panel = Label(new_window, image=image)
     panel.image = image
     panel.pack()
 
 def openGraphWindow():
     new_window = Toplevel(root)
-    # get image
-    image = ImageTk.PhotoImage(Image.open('C:/Users/admin/Desktop/GUI_tesi/graph-reti.png'))
-    # load image
+    image = ImageTk.PhotoImage(Image.open('C:/Users/admin/Desktop/GUI/src/graph-reti.png'))
     panel = Label(new_window, image=image)
     panel.image = image
     panel.pack()
@@ -290,7 +284,7 @@ def videoLoop(mirror=True):
     elif(videoloop_stop[1] == 'efficientnet_b0'):
       modello = torch.load('C:/Users/admin/Desktop/GUI_tesi/Modelli/efficientnet_b0/efficientnet_b0_model.pt', map_location=device)
       modello.eval()
-    
+
     while True:
         ret, to_draw = cap.read()
         #if mirror is True:
@@ -300,13 +294,13 @@ def videoLoop(mirror=True):
         image = Image.fromarray(image)
 
         correct_count = 0
-        frame_count = 0 # To count total frames.
-        total_fps = 0 # To get the final frames per second. 
+        frame_count = 0
+        total_fps = 0  
         test_images = 0
         #if True:
         if(videoloop_stop[1]=='nessuna'):
           image = ImageTk.PhotoImage(image)
-          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 20, text='Scegliere una rete', compound='bottom')
+          panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 0, text='Scegliere una rete', compound='bottom')
           panel.config(bg="red")
         else:
             #image2 = cv2.cvtColor(to_draw, cv2.COLOR_BGR2RGB)
@@ -319,9 +313,10 @@ def videoLoop(mirror=True):
             start_time = time.time()
             pred = modello(image2.to(device))
             end_time = time.time()
-            tresh = pred
+            #tresh = pred
             pred = F.softmax(pred, dim=1)
-            _, class_idx[0] = torch.max(pred,1)
+            tresh = pred
+            prob, class_idx[0] = torch.max(pred,1)
 
             fps = 1 / (end_time - start_time)
             total_fps += fps
@@ -338,32 +333,40 @@ def videoLoop(mirror=True):
                     fontFace=label_font, #fontFace=cv2.FONT_HERSHEY_TRIPLEX,
                     fontScale=1.5, color=(0, 255, 0),thickness=1)
             '''
-
-        #else:
-            if tresh[0][class_idx[0]]>7.01:
+            if int(prob.detach().numpy()[0]*100)>70:
               image = ImageTk.PhotoImage(image)
-              testo = class_names[class_idx[0]]+'\nFPS: '+str(round(total_fps))
-              panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 30, text=testo, compound='bottom')
+              testo = class_names[class_idx[0]]+'\nFPS: '+str(round(total_fps)) + '  Pred:'+str(int(prob.detach().numpy()[0]*100))+'%'
+              panel = tk.Label(root, image=image,
+                               #justify=tk.LEFT,
+                               wraplength=500,
+                               padx = 0, text=testo,
+                               compound='bottom')
               panel.config(bg="green")
             else:
               image = ImageTk.PhotoImage(image)
               testo = 'Sconosciuto\nFPS: '+str(round(total_fps))
-              panel = tk.Label(root, image=image, justify=tk.LEFT, padx = 30, text=testo, compound='bottom')
+              panel = tk.Label(root, image=image,
+                               #justify=tk.LEFT,
+                               padx = 0, text=testo,
+                               compound='bottom')
               panel.config(bg="orange")
-        panel.config(font=("Courier", 24))
+        panel.config(font=("Courier", 22))
         panel.config(fg="#FFFFFF")
         panel.image = image
+        panel.pack()
         panel.place(x=50, y=50)
+        
 
-        # check switcher value
+        # check su videoloop_stop
         if videoloop_stop[0]:
-            # if switcher tells to stop then we switch it again and stop videoloop
             videoloop_stop[0] = False
             panel.destroy()
+            panel.destroy()
             break
+        
 
 
-# videoloop_stop is a simple switcher between ON and OFF modes
+# switch ON/OFF e modello
 videoloop_stop = [False, 'nessuna']
 
 class_idx = [43]
