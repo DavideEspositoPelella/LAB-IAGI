@@ -333,7 +333,7 @@ def videoLoop(mirror=True):
                     fontFace=label_font, #fontFace=cv2.FONT_HERSHEY_TRIPLEX,
                     fontScale=1.5, color=(0, 255, 0),thickness=1)
             '''
-            if int(prob.detach().numpy()[0]*100)>70:
+            if int(prob.detach().numpy()[0]*100)>=70:
               image = ImageTk.PhotoImage(image)
               testo = class_names[class_idx[0]]+'\nFPS: '+str(round(total_fps)) + '  Pred:'+str(int(prob.detach().numpy()[0]*100))+'%'
               panel = tk.Label(root, image=image,
