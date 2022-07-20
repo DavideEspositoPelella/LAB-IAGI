@@ -41,7 +41,7 @@ from torchvision import models
 # %matplotlib inline
 # %config InlineBackend.figure_format='retina'
 sns.set(style='whitegrid', palette='muted', font_scale=1.2)
-rcParams['figure.figsize'] = 12, 8
+rcParams['figure.figsize'] = 12, 9
 ########################
 
 RANDOM_SEED = 42   #Replicare l'esperimento
@@ -597,97 +597,6 @@ def plot_training_history(history):
 
 plot_training_history(history)
 
-"""## Evaluation
-
-Valutazione del modello sul TestSet. (No calcolo gradiente)
-"""
-
-def show_predictions(model, class_names, n_images=6):
-  model = model.eval()
-  images_handeled = 0
-  plt.figure()
-
-  with torch.no_grad():
-    for i, (inputs, labels) in enumerate(data_loaders['test']):
-      inputs = inputs.to(device)
-      labels = labels.to(device)
-
-      outputs = model(inputs)
-      _, preds = torch.max(outputs, 1)
-
-      for j in range(inputs.shape[0]):
-        images_handeled += 1
-        ax = plt.subplot(2, n_images//2, images_handeled)
-        ax.set_title(f'predicted: {class_names[preds[j]]}')
-        imshow(inputs.cpu().data[j])
-        ax.axis('off')
-
-        if images_handeled == n_images:
-          return
-
-#base_model = create_model('resnet18', 43)
-
-#base_model.load_state_dict(torch.load('drive/MyDrive/Modelli_backup/resnet18_no/resnet18_no.pt', map_location = device))
-#base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/resnet18/resnet18_strano.pt', map_location = device))
-
-#base_model.load_state_dict(torch.load('drive/MyDrive/Modelli/alexnet/alexnet_no_pretrain_no_augmentation.bin'))
-
-resnet18_no = torch.load('drive/MyDrive/Modelli/resnet18_no/resnet18_no_model.pt', map_location=device)
-resnet18_no.eval() 
-
-base_model = resnet18_no
-show_predictions(base_model, class_names, n_images=8)
-
-def get_predictions(model, data_loader):
-  model = model.eval()
-  predictions = []
-  real_values = []
-  with torch.no_grad():
-    for inputs, labels in data_loader:
-      inputs = inputs.to(device)
-      labels = labels.to(device)
-
-      outputs = model(inputs)
-      _, preds = torch.max(outputs, 1)
-      predictions.extend(preds)
-      real_values.extend(labels)
-  predictions = torch.as_tensor(predictions).cpu()
-  real_values = torch.as_tensor(real_values).cpu()
-  return predictions, real_values
-
-"""##Confusion Matrix
-Visualizzazione più significativa rispetto all'accuracy delle performance 
-"""
-
-def show_confusion_matrix(confusion_matrix, class_names):
-
-  cm = confusion_matrix.copy()
-
-  cell_counts = cm.flatten()
-
-  cm_row_norm = cm / cm.sum(axis=1)[:, np.newaxis]
-
-  row_percentages = ["{0:.2f}".format(value) for value in cm_row_norm.flatten()]
-
-  cell_labels = [f"{cnt}\n{per}" for cnt, per in zip(cell_counts, row_percentages)]
-  cell_labels = np.asarray(cell_labels).reshape(cm.shape[0], cm.shape[1])
-
-  df_cm = pd.DataFrame(cm_row_norm, index=class_names, columns=class_names)
-
-  #plt.figure(figsize = (10,7))
-  #plt.figure(figsize=(60, 40), dpi=90)
-  hmap = sns.heatmap(df_cm, annot=cell_labels, fmt="", cmap="Blues", annot_kws={'fontsize':5})
-  #hmap = sns.heatmap(df_cm, annot=cell_labels, fmt="", cmap="Blues")
-  hmap.yaxis.set_ticklabels(hmap.yaxis.get_ticklabels(), rotation=0, ha='right')
-  hmap.xaxis.set_ticklabels(hmap.xaxis.get_ticklabels(), rotation=30, ha='right')
-  plt.ylabel('True Sign')
-  plt.xlabel('Predicted Sign');
-
-
-cm = confusion_matrix(y_test, y_pred)
-
-show_confusion_matrix(cm, class_names)
-
 """##TEST e FPS"""
 
 from torchvision.models.resnet import resnet18
@@ -808,8 +717,6 @@ for filename in tqdm(os.scandir('GTSRB/Final_Test/Images')):
     #  print()
     #  print()
 
-    #predictions.append(class_idx)
-    #ground_truth.append(gt_idx)
     predictions.append(class_idx)
     ground_truth.append(gt_idx)       
  
@@ -831,6 +738,39 @@ print(f"Average FPS: {avg_fps:.3f}")
 
 print(classification_report(predictions, ground_truth, target_names=class_names))
 print()
+
+"""#Confusion Matrix
+Visualizzazione più significativa rispetto all'accuracy delle performance 
+"""
+
+def show_confusion_matrix(confusion_matrix, class_names):
+
+  cm = confusion_matrix.copy()
+
+  cell_counts = cm.flatten()
+
+  cm_row_norm = cm / cm.sum(axis=1)[:, np.newaxis]
+
+  row_percentages = ["{0:.2f}".format(value) for value in cm_row_norm.flatten()]
+
+  cell_labels = [f"{cnt}\n{per}" for cnt, per in zip(cell_counts, row_percentages)]
+  cell_labels = np.asarray(cell_labels).reshape(cm.shape[0], cm.shape[1])
+
+  df_cm = pd.DataFrame(cm_row_norm, index=class_names, columns=class_names)
+
+  #plt.figure(figsize = (10,7))
+  #plt.figure(figsize=(60, 40), dpi=90)
+  hmap = sns.heatmap(df_cm, annot=cell_labels, fmt="", cmap="Blues", annot_kws={'fontsize':5})
+  #hmap = sns.heatmap(df_cm, annot=cell_labels, fmt="", cmap="Blues")
+  hmap.yaxis.set_ticklabels(hmap.yaxis.get_ticklabels(), rotation=0, ha='right')
+  hmap.xaxis.set_ticklabels(hmap.xaxis.get_ticklabels(), rotation=30, ha='right')
+  plt.ylabel('True Sign')
+  plt.xlabel('Predicted Sign');
+
+
+cm = confusion_matrix(predictions, ground_truth)
+
+show_confusion_matrix(cm, class_names)
 
 """## Classificazione immagine non vista
 
