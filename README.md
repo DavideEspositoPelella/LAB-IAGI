@@ -29,7 +29,7 @@ To download the dataset:
 !wget https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip
 !unzip -qq GTSRB_Final_Training_Images.zip
 ```
-![Train_Validation](src/Train_Validation_set.png)
+![Train_Validation](src/Train-Val-Test-green-big.png)
 
 ## Installation
 
@@ -91,6 +91,7 @@ To launch the GUI, run:
 ```bash
 python gui.py
 ```
+![GUI](src/esempio-GUI.png)
 
 # Demo video
 Link video funzionamento dell'interfaccia per l'uso dei modelli addestrati in real-time con webcam pc: https://youtu.be/jAFBdIOcRgY
