@@ -16,11 +16,12 @@ This project is designed to recognize and classify traffic signs using various p
 ## Introduction
 
 The goal of this project is to create a robust traffic sign recognition system. It leverages several state-of-the-art convolutional neural network (CNN) architectures and evaluates their performance based on accuracy and frames per second (FPS) on both GPU and CPU.
-![Pepper at Hotel Reception](https://miro.medium.com/v2/resize:fit:1400/1*e0UlsRVfTM2xw_uVWTsPVg.png)
+![introduction img](https://miro.medium.com/v2/resize:fit:1400/1*e0UlsRVfTM2xw_uVWTsPVg.png)
 
 ## Dataset
 
 The dataset used in this project is the [German Traffic Sign Recognition Benchmark (GTSRB)](https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip). 
+![gtsrb](https://production-media.paperswithcode.com/datasets/GTSRB-0000000633-9ce3c5f6_Dki5Rsf.jpg)
 
 To download the dataset:
 
@@ -28,6 +29,7 @@ To download the dataset:
 !wget https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip
 !unzip -qq GTSRB_Final_Training_Images.zip
 ```
+![Train_Validation](src/Train_Validation_set.png)
 
 ## Installation
 
